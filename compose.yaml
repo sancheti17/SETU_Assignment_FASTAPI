@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      DATABASE_PATH: /app/data/payments.db
+      PORT: "8000"
+      API_KEY: ${API_KEY:-}
+      REQUIRE_API_KEY: ${REQUIRE_API_KEY:-false}
+      SETTLEMENT_GRACE_HOURS: ${SETTLEMENT_GRACE_HOURS:-24}
+    volumes:
+      - payments-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+volumes:
+  payments-data:

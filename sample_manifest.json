@@ -1,0 +1,28 @@
+{
+  "source": "Unchanged user-provided sample_events.json",
+  "sha256": "a216a73f83a3d28b4f93a2ebac9d4de2f4ec4d4613caba6c6cd99aaa77977df7",
+  "bytes": 3408535,
+  "deliveries": 10355,
+  "unique_event_ids": 10165,
+  "duplicate_deliveries": 190,
+  "transactions": 3800,
+  "merchants": 5,
+  "merchant_ids": [
+    "merchant_1",
+    "merchant_2",
+    "merchant_3",
+    "merchant_4",
+    "merchant_5"
+  ],
+  "event_types": {
+    "payment_initiated": 3864,
+    "payment_failed": 665,
+    "payment_processed": 3004,
+    "settled": 2822
+  },
+  "currency_deliveries": {
+    "INR": 10355
+  },
+  "first_event_at": "2026-01-08T12:11:58.085567+00:00",
+  "last_event_at": "2026-04-08T15:56:25.860040+00:00"
+}

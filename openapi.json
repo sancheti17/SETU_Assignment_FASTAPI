@@ -1,0 +1,2031 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Setu Payment Reconciliation API",
+    "description": "Idempotent payment event ingestion and SQL reconciliation. Amounts are exact decimal strings. See README for projection and aging semantics.",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "operations"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Post Event",
+        "operationId": "post_event_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventReceipt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Canonical duplicate; no new event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/transactions": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Transactions",
+        "operationId": "transactions_transactions_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "unknown",
+                    "initiated",
+                    "processed",
+                    "failed",
+                    "conflicted",
+                    "settled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "INR",
+                    "USD",
+                    "EUR"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive earliest-event timestamp.",
+              "title": "From"
+            },
+            "description": "Inclusive earliest-event timestamp."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exclusive earliest-event timestamp.",
+              "title": "To"
+            },
+            "description": "Exclusive earliest-event timestamp."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "created_at",
+                "last_event_at",
+                "amount",
+                "transaction_id"
+              ],
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/transactions/{transaction_id}": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Detail",
+        "operationId": "detail_transactions__transaction_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Transaction Id"
+            }
+          },
+          {
+            "name": "history_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1,
+              "default": 1,
+              "title": "History Page"
+            }
+          },
+          {
+            "name": "history_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "History Page Size"
+            }
+          },
+          {
+            "name": "conflict_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Conflict Page"
+            }
+          },
+          {
+            "name": "conflict_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Conflict Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/reconciliation/summary": {
+      "get": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Reconciliation Summary",
+        "operationId": "reconciliation_summary_reconciliation_summary_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "unknown",
+                    "initiated",
+                    "processed",
+                    "failed",
+                    "conflicted",
+                    "settled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "INR",
+                    "USD",
+                    "EUR"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive earliest-event timestamp.",
+              "title": "From"
+            },
+            "description": "Inclusive earliest-event timestamp."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exclusive earliest-event timestamp.",
+              "title": "To"
+            },
+            "description": "Exclusive earliest-event timestamp."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Aging clock only; NOT historical state replay.",
+              "title": "As Of"
+            },
+            "description": "Aging clock only; NOT historical state replay."
+          },
+          {
+            "name": "grace_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 8760,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Defaults to SETTLEMENT_GRACE_HOURS (24).",
+              "title": "Grace Hours"
+            },
+            "description": "Defaults to SETTLEMENT_GRACE_HOURS (24)."
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Distinct comma-separated merchant,date,status. Currency is always included.",
+              "default": "merchant,date,status",
+              "title": "Group By"
+            },
+            "description": "Distinct comma-separated merchant,date,status. Currency is always included."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/reconciliation/discrepancies": {
+      "get": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Reconciliation Discrepancies",
+        "operationId": "reconciliation_discrepancies_reconciliation_discrepancies_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "unknown",
+                    "initiated",
+                    "processed",
+                    "failed",
+                    "conflicted",
+                    "settled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "INR",
+                    "USD",
+                    "EUR"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive earliest-event timestamp.",
+              "title": "From"
+            },
+            "description": "Inclusive earliest-event timestamp."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exclusive earliest-event timestamp.",
+              "title": "To"
+            },
+            "description": "Exclusive earliest-event timestamp."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Aging clock only; NOT historical state replay.",
+              "title": "As Of"
+            },
+            "description": "Aging clock only; NOT historical state replay."
+          },
+          {
+            "name": "grace_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 8760,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Defaults to SETTLEMENT_GRACE_HOURS (24).",
+              "title": "Grace Hours"
+            },
+            "description": "Defaults to SETTLEMENT_GRACE_HOURS (24)."
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "processed_not_settled",
+                    "settled_failed_payment",
+                    "settled_without_processed",
+                    "conflicting_payment_outcomes",
+                    "multiple_settlement_events",
+                    "ingestion_conflict"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reason"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscrepancyList"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConflictRecord": {
+        "properties": {
+          "conflict_id": {
+            "type": "integer",
+            "title": "Conflict Id"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "requested_transaction_id": {
+            "type": "string",
+            "title": "Requested Transaction Id"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "idempotency_key_reuse",
+              "transaction_mismatch"
+            ],
+            "title": "Reason"
+          },
+          "payload_hash": {
+            "type": "string",
+            "title": "Payload Hash"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "detected_at": {
+            "type": "string",
+            "title": "Detected At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conflict_id",
+          "event_id",
+          "transaction_id",
+          "requested_transaction_id",
+          "reason",
+          "payload_hash",
+          "payload",
+          "detected_at"
+        ],
+        "title": "ConflictRecord"
+      },
+      "DiscrepancyList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/DiscrepancyOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "grace_hours": {
+            "type": "integer",
+            "title": "Grace Hours"
+          },
+          "cutoff": {
+            "type": "string",
+            "title": "Cutoff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination",
+          "as_of",
+          "grace_hours",
+          "cutoff"
+        ],
+        "title": "DiscrepancyList"
+      },
+      "DiscrepancyOut": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "merchant_id": {
+            "type": "string",
+            "title": "Merchant Id"
+          },
+          "merchant": {
+            "$ref": "#/components/schemas/Merchant"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR"
+            ],
+            "title": "Currency"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "last_event_at": {
+            "type": "string",
+            "title": "Last Event At"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
+          },
+          "settled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled At"
+          },
+          "initiated_count": {
+            "type": "integer",
+            "title": "Initiated Count"
+          },
+          "processed_count": {
+            "type": "integer",
+            "title": "Processed Count"
+          },
+          "failed_count": {
+            "type": "integer",
+            "title": "Failed Count"
+          },
+          "settled_count": {
+            "type": "integer",
+            "title": "Settled Count"
+          },
+          "conflict_count": {
+            "type": "integer",
+            "title": "Conflict Count"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "initiated",
+              "processed",
+              "failed",
+              "conflicted",
+              "settled"
+            ],
+            "title": "Status"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "initiated",
+              "processed",
+              "failed",
+              "conflicted"
+            ],
+            "title": "Payment Status"
+          },
+          "settlement_status": {
+            "type": "string",
+            "enum": [
+              "unsettled",
+              "settled"
+            ],
+            "title": "Settlement Status"
+          },
+          "reasons": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "processed_not_settled",
+                "settled_failed_payment",
+                "settled_without_processed",
+                "conflicting_payment_outcomes",
+                "multiple_settlement_events",
+                "ingestion_conflict"
+              ]
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "merchant_id",
+          "merchant",
+          "amount",
+          "amount_minor",
+          "currency",
+          "created_at",
+          "last_event_at",
+          "processed_at",
+          "settled_at",
+          "initiated_count",
+          "processed_count",
+          "failed_count",
+          "settled_count",
+          "conflict_count",
+          "event_count",
+          "status",
+          "payment_status",
+          "settlement_status",
+          "reasons"
+        ],
+        "title": "DiscrepancyOut"
+      },
+      "ErrorInfo": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "transaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ],
+        "title": "ErrorInfo"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "EventIn": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Event Id"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "payment_initiated",
+              "payment_processed",
+              "payment_failed",
+              "settled"
+            ],
+            "title": "Event Type"
+          },
+          "transaction_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Transaction Id"
+          },
+          "merchant_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+            "title": "Merchant Id"
+          },
+          "merchant_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Merchant Name"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 9999999999.99,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,2}0*$"
+              }
+            ],
+            "title": "Amount",
+            "description": "Positive exact money; a decimal string is recommended."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR"
+            ],
+            "title": "Currency"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "description": "Timezone-aware ISO-8601 datetime, year 1970\u20132100."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "event_type",
+          "transaction_id",
+          "merchant_id",
+          "merchant_name",
+          "amount",
+          "currency",
+          "timestamp"
+        ],
+        "title": "EventIn",
+        "example": {
+          "amount": "15248.29",
+          "currency": "INR",
+          "event_id": "demo-event-1",
+          "event_type": "payment_initiated",
+          "merchant_id": "merchant_2",
+          "merchant_name": "FreshBasket",
+          "timestamp": "2026-01-08T12:11:58.085567+00:00",
+          "transaction_id": "demo-tx-1"
+        }
+      },
+      "EventReceipt": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "transaction_id",
+          "duplicate"
+        ],
+        "title": "EventReceipt"
+      },
+      "EventRecord": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "payment_initiated",
+              "payment_processed",
+              "payment_failed",
+              "settled"
+            ],
+            "title": "Event Type"
+          },
+          "occurred_at": {
+            "type": "string",
+            "title": "Occurred At"
+          },
+          "received_at": {
+            "type": "string",
+            "title": "Received At"
+          },
+          "payload_hash": {
+            "type": "string",
+            "title": "Payload Hash"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "transaction_id",
+          "event_type",
+          "occurred_at",
+          "received_at",
+          "payload_hash",
+          "payload"
+        ],
+        "title": "EventRecord"
+      },
+      "GroupPagination": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total_groups": {
+            "type": "integer",
+            "title": "Total Groups"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "page_size",
+          "total_groups"
+        ],
+        "title": "GroupPagination"
+      },
+      "Merchant": {
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "title": "Merchant Id"
+          },
+          "merchant_name": {
+            "type": "string",
+            "title": "Merchant Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchant_id",
+          "merchant_name"
+        ],
+        "title": "Merchant"
+      },
+      "Pagination": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "page_size",
+          "total"
+        ],
+        "title": "Pagination"
+      },
+      "SummaryOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryRow"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/GroupPagination"
+          },
+          "group_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Group By"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "grace_hours": {
+            "type": "integer",
+            "title": "Grace Hours"
+          },
+          "cutoff": {
+            "type": "string",
+            "title": "Cutoff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination",
+          "group_by",
+          "as_of",
+          "grace_hours",
+          "cutoff"
+        ],
+        "title": "SummaryOut"
+      },
+      "SummaryRow": {
+        "properties": {
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "initiated",
+                  "processed",
+                  "failed",
+                  "conflicted",
+                  "settled"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR"
+            ],
+            "title": "Currency"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "title": "Transaction Count"
+          },
+          "discrepancy_count": {
+            "type": "integer",
+            "title": "Discrepancy Count"
+          },
+          "total_amount_minor": {
+            "type": "integer",
+            "title": "Total Amount Minor"
+          },
+          "processed_amount_minor": {
+            "type": "integer",
+            "title": "Processed Amount Minor"
+          },
+          "settled_amount_minor": {
+            "type": "integer",
+            "title": "Settled Amount Minor"
+          },
+          "outstanding_amount_minor": {
+            "type": "integer",
+            "title": "Outstanding Amount Minor"
+          },
+          "total_amount": {
+            "type": "string",
+            "title": "Total Amount"
+          },
+          "processed_amount": {
+            "type": "string",
+            "title": "Processed Amount"
+          },
+          "settled_amount": {
+            "type": "string",
+            "title": "Settled Amount"
+          },
+          "outstanding_amount": {
+            "type": "string",
+            "title": "Outstanding Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "transaction_count",
+          "discrepancy_count",
+          "total_amount_minor",
+          "processed_amount_minor",
+          "settled_amount_minor",
+          "outstanding_amount_minor",
+          "total_amount",
+          "processed_amount",
+          "settled_amount",
+          "outstanding_amount"
+        ],
+        "title": "SummaryRow"
+      },
+      "TransactionDetail": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "merchant_id": {
+            "type": "string",
+            "title": "Merchant Id"
+          },
+          "merchant": {
+            "$ref": "#/components/schemas/Merchant"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR"
+            ],
+            "title": "Currency"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "last_event_at": {
+            "type": "string",
+            "title": "Last Event At"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
+          },
+          "settled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled At"
+          },
+          "initiated_count": {
+            "type": "integer",
+            "title": "Initiated Count"
+          },
+          "processed_count": {
+            "type": "integer",
+            "title": "Processed Count"
+          },
+          "failed_count": {
+            "type": "integer",
+            "title": "Failed Count"
+          },
+          "settled_count": {
+            "type": "integer",
+            "title": "Settled Count"
+          },
+          "conflict_count": {
+            "type": "integer",
+            "title": "Conflict Count"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "initiated",
+              "processed",
+              "failed",
+              "conflicted",
+              "settled"
+            ],
+            "title": "Status"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "initiated",
+              "processed",
+              "failed",
+              "conflicted"
+            ],
+            "title": "Payment Status"
+          },
+          "settlement_status": {
+            "type": "string",
+            "enum": [
+              "unsettled",
+              "settled"
+            ],
+            "title": "Settlement Status"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventRecord"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictRecord"
+            },
+            "type": "array",
+            "title": "Conflicts"
+          },
+          "history_pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "conflict_pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "merchant_id",
+          "merchant",
+          "amount",
+          "amount_minor",
+          "currency",
+          "created_at",
+          "last_event_at",
+          "processed_at",
+          "settled_at",
+          "initiated_count",
+          "processed_count",
+          "failed_count",
+          "settled_count",
+          "conflict_count",
+          "event_count",
+          "status",
+          "payment_status",
+          "settlement_status",
+          "events",
+          "conflicts",
+          "history_pagination",
+          "conflict_pagination"
+        ],
+        "title": "TransactionDetail"
+      },
+      "TransactionList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "TransactionList"
+      },
+      "TransactionOut": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "merchant_id": {
+            "type": "string",
+            "title": "Merchant Id"
+          },
+          "merchant": {
+            "$ref": "#/components/schemas/Merchant"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR"
+            ],
+            "title": "Currency"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "last_event_at": {
+            "type": "string",
+            "title": "Last Event At"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
+          },
+          "settled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled At"
+          },
+          "initiated_count": {
+            "type": "integer",
+            "title": "Initiated Count"
+          },
+          "processed_count": {
+            "type": "integer",
+            "title": "Processed Count"
+          },
+          "failed_count": {
+            "type": "integer",
+            "title": "Failed Count"
+          },
+          "settled_count": {
+            "type": "integer",
+            "title": "Settled Count"
+          },
+          "conflict_count": {
+            "type": "integer",
+            "title": "Conflict Count"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "initiated",
+              "processed",
+              "failed",
+              "conflicted",
+              "settled"
+            ],
+            "title": "Status"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "initiated",
+              "processed",
+              "failed",
+              "conflicted"
+            ],
+            "title": "Payment Status"
+          },
+          "settlement_status": {
+            "type": "string",
+            "enum": [
+              "unsettled",
+              "settled"
+            ],
+            "title": "Settlement Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "merchant_id",
+          "merchant",
+          "amount",
+          "amount_minor",
+          "currency",
+          "created_at",
+          "last_event_at",
+          "processed_at",
+          "settled_at",
+          "initiated_count",
+          "processed_count",
+          "failed_count",
+          "settled_count",
+          "conflict_count",
+          "event_count",
+          "status",
+          "payment_status",
+          "settlement_status"
+        ],
+        "title": "TransactionOut"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  }
+}

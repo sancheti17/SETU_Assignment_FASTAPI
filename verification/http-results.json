@@ -1,0 +1,28 @@
+{
+  "server": "uvicorn",
+  "python": "3.13.15",
+  "transport": "HTTP over Unix domain socket",
+  "tcp_probe_error": "[Errno 99] Cannot assign requested address",
+  "public_deployment_tested": false,
+  "docker_tested": false,
+  "input_deliveries": 10355,
+  "http_ingestion_status_counts": {
+    "201": 10165,
+    "200": 190
+  },
+  "http_ingestion_seconds": 56.514,
+  "timing_note": "Single local verification run; not a production performance benchmark",
+  "authentication_unauthorized": 401,
+  "smoke_statuses": {
+    "/health": 200,
+    "/docs": 200,
+    "/redoc": 200,
+    "/openapi.json": 200,
+    "/transactions?merchant_id=merchant_2&status=settled&page_size=10&sort_order=asc": 200,
+    "/transactions/2f86e94c-239c-4302-9874-75f28e3474ee": 200,
+    "/reconciliation/summary?group_by=merchant,status&page_size=200&as_of=2026-05-01T00:00:00Z": 200,
+    "/reconciliation/discrepancies?as_of=2026-05-01T00:00:00Z": 200
+  },
+  "collection_requests": 14,
+  "collection_passed_tests": 14
+}

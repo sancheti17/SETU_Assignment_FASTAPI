@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite*
+*.log
+verification

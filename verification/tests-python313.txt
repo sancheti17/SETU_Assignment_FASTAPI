@@ -1,0 +1,35 @@
+test_api_key_and_public_docs (test_api.APITest.test_api_key_and_public_docs) ... ok
+test_body_limit (test_api.APITest.test_body_limit) ... ok
+test_busy_database_returns_retryable_error (test_api.APITest.test_busy_database_returns_retryable_error) ... ok
+test_canonical_duplicate (test_api.APITest.test_canonical_duplicate) ... ok
+test_complete_lifecycle (test_api.APITest.test_complete_lifecycle) ... ok
+test_concurrent_identical_posts (test_api.APITest.test_concurrent_identical_posts) ... ok
+test_conflicting_outcomes_are_preserved (test_api.APITest.test_conflicting_outcomes_are_preserved) ... ok
+test_cross_transaction_id_reuse (test_api.APITest.test_cross_transaction_id_reuse) ... ok
+test_distinct_settlements_are_flagged_but_exact_retries_are_not (test_api.APITest.test_distinct_settlements_are_flagged_but_exact_retries_are_not) ... ok
+test_exact_duplicate (test_api.APITest.test_exact_duplicate) ... ok
+test_exact_json_precision_is_not_lost (test_api.APITest.test_exact_json_precision_is_not_lost) ... ok
+test_failed_then_settled (test_api.APITest.test_failed_then_settled) ... ok
+test_filters_dates_sort_and_pagination (test_api.APITest.test_filters_dates_sort_and_pagination) ... ok
+test_grace_boundary_and_aging_clock (test_api.APITest.test_grace_boundary_and_aging_clock) ... ok
+test_health_empty_endpoints_and_headers (test_api.APITest.test_health_empty_endpoints_and_headers) ... ok
+test_invalid_event_fields (test_api.APITest.test_invalid_event_fields) ... ok
+test_invalid_query_values (test_api.APITest.test_invalid_query_values) ... ok
+test_not_found_and_method_not_allowed (test_api.APITest.test_not_found_and_method_not_allowed) ... ok
+test_out_of_order_all_permutations (test_api.APITest.test_out_of_order_all_permutations) ... ok
+test_paged_history_and_conflicts (test_api.APITest.test_paged_history_and_conflicts) ... ok
+test_persistence_after_app_restart (test_api.APITest.test_persistence_after_app_restart) ... ok
+test_production_key_is_required (test_api.APITest.test_production_key_is_required) ... ok
+test_same_id_different_payload_is_audited_once (test_api.APITest.test_same_id_different_payload_is_audited_once) ... ok
+test_settlement_before_processed_is_reconciled_when_processed_arrives (test_api.APITest.test_settlement_before_processed_is_reconciled_when_processed_arrives) ... ok
+test_sql_integrity_and_index_plan (test_api.APITest.test_sql_integrity_and_index_plan) ... ok
+test_strict_json_and_content_type (test_api.APITest.test_strict_json_and_content_type) ... ok
+test_summary_counts_transactions_not_event_join_rows (test_api.APITest.test_summary_counts_transactions_not_event_join_rows) ... ok
+test_summary_keeps_currencies_separate (test_api.APITest.test_summary_keeps_currencies_separate) ... ok
+test_swagger_redoc_and_openapi (test_api.APITest.test_swagger_redoc_and_openapi) ... ok
+test_transaction_invariants (test_api.APITest.test_transaction_invariants) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 2.290s
+
+OK

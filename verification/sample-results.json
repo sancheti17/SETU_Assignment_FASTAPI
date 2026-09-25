@@ -1,0 +1,52 @@
+{
+  "sample_sha256": "a216a73f83a3d28b4f93a2ebac9d4de2f4ec4d4613caba6c6cd99aaa77977df7",
+  "deliveries": 10355,
+  "input_event_types": {
+    "payment_initiated": 3864,
+    "payment_failed": 665,
+    "payment_processed": 3004,
+    "settled": 2822
+  },
+  "first_ingestion_status_counts": {
+    "201": 10165,
+    "200": 190
+  },
+  "replay_status_counts": {
+    "200": 10355
+  },
+  "database_counts": {
+    "merchants": 5,
+    "transactions": 3800,
+    "payment_events": 10165,
+    "ingestion_conflicts": 0
+  },
+  "transaction_status_counts": {
+    "failed": 665,
+    "initiated": 190,
+    "processed": 380,
+    "settled": 2565
+  },
+  "total_amount_minor": 9517662569,
+  "discrepant_transactions": 570,
+  "discrepancy_as_of": "2026-05-01T00:00:00Z",
+  "grace_hours": 24,
+  "discrepancy_reason_counts_overlap": {
+    "processed_not_settled": 380,
+    "settled_failed_payment": 95,
+    "settled_without_processed": 95,
+    "conflicting_payment_outcomes": 0,
+    "multiple_settlement_events": 95,
+    "ingestion_conflict": 0
+  },
+  "integrity_check": "ok",
+  "foreign_key_violations": [],
+  "query_plan": [
+    [
+      5,
+      0,
+      61,
+      "SEARCH transactions USING INDEX idx_transactions_merchant_status_created (merchant_id=? AND status=?)"
+    ]
+  ],
+  "transport": "direct domain ingestion; queries through FastAPI TestClient"
+}
