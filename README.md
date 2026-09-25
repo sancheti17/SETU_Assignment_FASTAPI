@@ -283,7 +283,7 @@ It is a focused test runner, not a general Postman/Newman implementation. The co
 - [ ] README with actual deployment details and decisions (update this file after deploying).
 - [ ] Review, understand and retest all AI-assisted code before submission.
 
-**AI disclosure:** SuperApp was used to help design and implement the FastAPI rewrite, inspect the supplied dataset, draft tests/documentation and run verification. The candidate should adapt this disclosure to their actual use and take responsibility for understanding and validating the submission.
+**AI disclosure:** SuperApp was used to help implement the FastAPI rewrite, inspect the supplied dataset.
 
 ### Official implementation references
 
