@@ -274,15 +274,8 @@ It is a focused test runner, not a general Postman/Newman implementation. The co
 - **Observability:** structured access logs, request IDs and busy errors are implemented; metrics, tracing, dashboards and alerts are not.
 - **Evidence:** test results are reproducible checks, not a production benchmark. The sandbox blocked TCP loopback, so actual-server checks used HTTP over a Unix socket; public deployment is still unverified.
 
-## 10. Submission checklist and AI disclosure
-
-- [ ] Public Git repository URL; verify a clean clone follows the quick start.
-- [ ] Working public deployment URL, persistence check and private reviewer API-key handoff.
-- [ ] Importable Postman collection (included).
-- [ ] Shareable screen recording covering all APIs and key edge cases.
-- [ ] README with actual deployment details and decisions (update this file after deploying).
-- [ ] Review, understand and retest all AI-assisted code before submission.
-
+## 10. Demo Video link and AI disclosure
+**Demo Video Link** 'https://drive.google.com/drive/folders/1j8Kif7zoWixtW3M2xequ2M5KGEALxWFj'
 **AI disclosure:** SuperApp was used to help implement the FastAPI rewrite, inspect the supplied dataset.
 
 ### Official implementation references
